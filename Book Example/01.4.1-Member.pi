@@ -1,0 +1,34 @@
+% Check if the first element matches
+my_member(X, [Y|_]) ?=> 
+    X = Y.
+
+% Check the rest of the list (2nd element to the end)
+my_member(X, [_|L]) => 
+    member(X, L).
+
+main =>
+    List1 = [a, b, c, d],
+
+    println("Testing member/2:"),
+
+
+    All = findall(X, my_member(X, List1)),
+
+    foreach (X in All)
+        printf("%w is a member of %w%n", X, List1)
+    end,
+
+    (my_member(c, List1) -> 
+        println("c is in the list1") 
+    ; 
+        println("c is not in the list1")
+    ),
+
+    List2 = [10, 20, 30, 40],
+
+    println("Check if 30 is in the list2:"),
+    (my_member(30, List2) -> println("30 is in the list2") ; println("30 is not in the list2")),
+
+
+    println("Check if 50 is in the list2 (should fail):"),
+    (my_member(50, List2) -> println("50 is in the list2") ; println("50 is not in the list2")).

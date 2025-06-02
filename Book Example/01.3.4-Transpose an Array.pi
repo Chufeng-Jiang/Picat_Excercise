@@ -1,0 +1,20 @@
+main =>
+    % Sample matrix
+    Matrix = {{1,2,3},
+              {4,5,6}},
+
+    N = length(Matrix),
+    M = length(Matrix[1]),
+
+    % 创建 M 行 N 列的转置矩阵
+    Transposed = new_array(M, N),
+
+    % 执行转置操作
+    foreach (I in 1..N, J in 1..M)
+        Transposed[J,I] = Matrix[I,J]
+    end,
+
+    % 打印转置结果
+    foreach (Row in Transposed)
+        println(Row)
+    end.

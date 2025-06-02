@@ -1,0 +1,24 @@
+main =>
+    Score = 74,
+
+    % Assigns a letter grade based on the score.
+    if Score >= 90 then
+        Grade = 'A'
+    elseif Score >= 80 then
+        Grade = 'B'
+    elseif Score >= 70 then
+        Grade = 'C'
+    elseif Score >= 60 then
+        Grade = 'D'
+    else
+        Grade = 'F'
+    end,
+
+    %println("Grade: " ++ Grade),
+
+    % Determines whether Score passes or fails.
+    (Score >= 60 -> 
+        println("Pass") 
+    ; 
+        println("Fail")
+    ).

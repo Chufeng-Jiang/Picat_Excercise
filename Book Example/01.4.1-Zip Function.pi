@@ -1,0 +1,5 @@
+main =>
+    printf("The zipped list: %w%n", zip(1..2,3..4)),
+    foreach ({X, Y} in zip(1..2,3..4))
+        printf("%d + %d = %d%n", X, Y, X + Y)
+    end.
