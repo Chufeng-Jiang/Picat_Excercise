@@ -1,0 +1,213 @@
+index (+,-) (-,+)
+
+% --------- Grade Example ---------
+grade_example =>
+    Score = 74,
+
+    % Assigns a letter grade based on the score.
+    if Score >= 90 then
+        Grade = 'A'
+    elseif Score >= 80 then
+        Grade = 'B'
+    elseif Score >= 70 then
+        Grade = 'C'
+    elseif Score >= 60 then
+        Grade = 'D'
+    else
+        Grade = 'F'
+    end,
+
+    %println("Grade: " ++ Grade),
+
+    % Determines whether Score passes or fails.
+    (Score >= 60 -> 
+        println("Pass") 
+    ; 
+        println("Fail")
+    ).
+
+% --------- Transpose Example ---------
+transpose_matrix =>
+    % Sample matrix
+    Matrix = {{1,2,3},
+              {4,5,6}},
+
+    N = length(Matrix),
+    M = length(Matrix[1]),
+
+    Transposed = new_array(M, N),
+
+    foreach (I in 1..N, J in 1..M)
+        Transposed[J,I] = Matrix[I,J]
+    end,
+
+    foreach (Row in Transposed)
+        println(Row)
+    end.
+
+% --------- Member Example ---------
+my_member(X, [Y|_]) ?=> 
+    X = Y.
+
+my_member(X, [_|L]) => 
+    my_member(X, L).
+
+member_example =>
+    List1 = [a, b, c, d],
+
+    println("Testing member/2:"),
+
+    All = findall(X, my_member(X, List1)),
+
+    foreach (X in All)
+        printf("%w is a member of %w%n", X, List1)
+    end,
+
+    (my_member(c, List1) -> 
+        println("c is in the list1") 
+    ; 
+        println("c is not in the list1")
+    ),
+
+    List2 = [10, 20, 30, 40],
+
+    println("Check if 30 is in the list2:"),
+    (my_member(30, List2) -> println("30 is in the list2") ; println("30 is not in the list2")),
+
+    println("Check if 50 is in the list2 (should fail):"),
+    (my_member(50, List2) -> println("50 is in the list2") ; println("50 is not in the list2")).
+
+% --------- Min-Max of List---------
+min_max1(List, Min, Max), List = [First|Rest] =>
+    Mn = First,
+    Mx = First,
+    foreach (Value in Rest)
+        if Value < Mn then
+            Mn := Value
+        elseif Value > Mx then
+            Mx := Value
+        end
+    end,
+    Min = Mn,
+    Max = Mx.
+
+min_max2(List, Min, Max), List !== [] =>
+    Min = min(List),
+    Max = max(List).
+
+min_max_example =>
+    List = [5, 12, 3, 21, 8],
+
+    min_max1(List, Min1, Max1),
+    printf("min_max1 - Min: %d, Max: %d%n", Min1, Max1),
+
+    min_max2(List, Min2, Max2),
+    printf("min_max2 - Min: %d, Max: %d%n", Min2, Max2).
+
+% --------- Zip Example ---------
+zip_example =>
+    printf("The zipped list: %w%n", zip(1..2,3..4)),
+    foreach ({X, Y} in zip(1..2,3..4))
+        printf("%d + %d = %d%n", X, Y, X + Y)
+    end.
+
+% --------- Graph Example ---------
+edge(a, b).
+edge(a, c).
+edge(b, c).
+edge(c, b).
+
+graph_example =>
+    println("Nodes reachable from a:"),
+    foreach (Y in findall(Y, edge(a, Y)))
+        printf("a -> %w%n", Y)
+    end,
+
+    println("\nNodes that point to c:"),
+    foreach (X in findall(X, edge(X, c)))
+        printf("%w -> c%n", X)
+    end,
+
+    println("\nAll two-step paths from a:"),
+    foreach (X in findall(X, edge(a, X)))
+        foreach (Y in findall(Y, edge(X, Y)))
+            printf("a -> %w -> %w%n", X, Y)
+        end
+    end.
+
+% --------- QuickSort Example ---------
+qsort([]) = [].
+qsort([H|T]) = L =>
+    L = qsort([E : E in T, E =< H]) ++
+        [H] ++
+        qsort([E : E in T, E > H]).
+
+qsort_example =>
+    L = [17, 3, 41, 25, 8, 1, 6, 40],
+    println("Original list:"),
+    println(L),
+
+    Sorted = qsort(L),
+    println("Sorted list:"),
+    println(Sorted).
+
+
+
+% --------- Flatten Example ---------
+
+flatten(L) = FL => flatten(L, FL, []).
+
+flatten([], FL, FLr) => FL = FLr.
+flatten([H|T], FL, FLr) =>
+    flatten(H, FL, FL1),
+    flatten(T, FL1, FLr).
+
+% put Any into the FLr directly
+flatten(Any, FL, FLr) => FL = [Any | FLr].
+
+flatten_example =>
+    NestedList = [1, [2, 3], [[4], 5]],
+    FlatList = flatten(NestedList),
+    printf("Flattened list: %w%n", FlatList).
+
+% --------- Loop Pred Example ---------
+
+loop_pred([], _I) => true.
+loop_pred([E|L], I) =>
+    printf("L[%w] = %w\n", I, E),
+    loop_pred(L, I+1).
+
+loop_pred_example =>
+    List = [10, 20, 30, 40, 50],
+    println("Using recursive loop_pred to print list with index:"),
+    loop_pred(List, 1).
+
+
+% --------- Main ---------
+main =>
+    println("=== Grade Example ==="),
+    grade_example,
+
+    println("\n=== Transpose Example ==="),
+    transpose_matrix,
+
+    println("\n=== Member Example ==="),
+    member_example,
+
+    println("\n=== Min Max Example ==="),
+    min_max_example,
+
+    println("\n=== Zip Example ==="),
+    zip_example,
+
+    println("\n=== Graph Example ==="),
+    graph_example,
+
+    println("\n=== QuickSort Example ==="),
+    qsort_example,
+    
+    println("\n=== Flatten Example ==="),
+    flatten_example,
+
+    println("\n=== Loop Pred Example ==="),
+    loop_pred_example.
