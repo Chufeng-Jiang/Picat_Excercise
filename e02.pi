@@ -1,0 +1,648 @@
+import cp.
+% import sat.
+% ================== Exercise 1. ====================================
+
+smm_carry =>
+    Digits = [S, E, N, D, M, O, R, Y],
+    Digits :: 0..9,              
+    all_different(Digits),       
+    S #> 0,                      
+    M #> 0,                      
+    
+    % Adding SEND + MORE = MONEY with carry considerations
+    % Carry variables for each column
+    Carry = [C1, C2, C3, C4],
+    Carry :: 0..1,  
+
+
+    D + E  #= Y + 10 * C1, 
+    N + R + C1  #= E + 10 * C2, 
+    E + O + C2 #= N + 10 * C3, 
+    S + M + C3 #= O + 10 * C4, 
+    C4 #= M,
+
+    println("======= Carry smm ======="),
+    time(solve(Digits)),
+    println(Digits).
+
+  smm =>
+    Digits = [S, E, N, D, M, O, R, Y],
+    Digits :: 0..9,            % 变量取值范围 0 到 9
+    all_different(Digits),     % 所有数字互不相同
+    S #> 0,                   % S 不能为 0（最高位非零）
+    M #> 0,                   % M 不能为 0（最高位非零）
+
+    1000 * S + 100 * E + 10 * N + D
+  + 1000 * M + 100 * O + 10 * R + E
+  #= 10000 * M + 1000 * O + 100 * N + 10 * E + Y,
+    
+    println("\n======= Normal smm ======="),
+    time(solve(Digits)),
+    println(Digits).
+  
+ex1 =>
+    smm_carry,
+    smm.
+
+% ================== Exercise 2. ====================================
+
+
+donald_gerald_carry =>
+    Digits = [D, O, N, A, L, G, E, R, B, T],
+    Digits :: 0..9,               
+    all_different(Digits),       
+    D #> 0,                      
+    G #> 0,                      
+    R #> 0,                       
+    
+    Carry = [C1, C2, C3, C4, C5],
+    Carry :: 0..1,  
+
+        D + D  #= T + 10 * C1,    
+    L + L + C1 #= R + 10 * C2,
+    A + A + C2 #= E + 10 * C3,   
+    N + R + C3 #= B + 10 * C4,    
+    O + E + C4 #= O + 10 * C5,   
+    D + G + C5 #= R,         
+
+
+    println("======= Carry donald_gerald ======="),
+    time(solve(Digits)),
+    println(Digits).
+
+
+donald_gerald =>
+    Digits = [D, O, N, A, L, G, E, R, B, T],
+    Digits :: 0..9,              
+    all_different(Digits),       
+    D #> 0,                      
+    G #> 0,                      
+    R #> 0,                      
+    
+     100000 * D + 10000 * O + 1000 * N + 100 * A + 10 * L + D
+   + 100000 * G + 10000 * E + 1000 * R + 100 * A + 10 * L + D
+  #= 100000 * R + 10000 * O + 1000 * B + 100 * E + 10 * R + T,
+
+    println("\n======= Normal donald_gerald ======="),
+    time(solve(Digits)),
+    println(Digits).
+
+
+ex2 =>
+    donald_gerald_carry,
+    donald_gerald.
+
+
+% ================== Exercise 3. ====================================
+
+sudoku =>
+    board(Board),
+    sudoku(Board),
+    println(Board),
+    nl.                           % newline
+
+sudoku(Board) =>
+    N = Board.length,             % 数独维度，比如4
+    N1 = ceiling(sqrt(N)),        % 块大小，比如2
+
+    Board :: 1..N,                % 数字取值范围1~N
+
+    % 行约束：每行数字互不相同
+    foreach(I in 1..N)
+        all_different([Board[I, J] : J in 1..N])
+    end,
+
+    % 列约束：每列数字互不相同
+    foreach(J in 1..N)
+        all_different([Board[I, J] : I in 1..N])
+    end,
+
+    % 块约束：每个块内数字互不相同
+    foreach(I in 1..N1..N, J in 1..N1..N)
+        all_different([Board[I + K, J + L] : K in 0..N1 - 1, L in 0..N1 - 1])
+    end,
+
+    solve(Board).
+
+board(Board) =>
+    Board = [
+    [_, _, 2, _, _, 5, _, 7, 9],
+    [1, _, 5, _, _, 3, _, _, _],
+    [_, _, _, _, _, _, 6, _, _],
+    [_, 1, _, 4, _, _, 9, _, _],
+    [_, 9, _, _, _, _, _, 8, _],
+    [_, _, 4, _, _, 9, _, 1, _],
+    [_, _, 9, _, _, _, _, _, _],
+    [_, _, _, 1, _, _, 3, _, 6],
+    [6, 8, _, 3, _, _, 4, _, _]
+    ].
+
+ex3 =>
+    sudoku.
+
+% ================== Exercise 4. ====================================
+% import sat.
+
+ms =>
+    problem(Matrix),
+    NRows = Matrix.length,             
+    NCols = Matrix[1].length,          
+
+
+    Mines = new_array(NRows, NCols),   
+    Mines :: 0..1,                    
+
+    foreach(I in 1..NRows, J in 1..NCols)
+        if ground(Matrix[I, J]) then
+
+            Matrix[I, J] #= sum([Mines[I + A, J + B] :
+                        A in -1..1, B in -1..1,
+                        I + A > 0, J + B > 0,
+                        I + A =< NRows, J + B =< NCols]),
+            
+            Mines[I, J] #= 0
+        end
+    end,
+    
+    solve(Mines),
+    println(Mines),
+    nl,
+    print_minesweeper(Mines, NRows, NCols).
+
+print_minesweeper(Mines, NRows, NCols) =>
+    foreach(I in 1..NRows)
+        Row = [Mines[I, J] : J in 1..NCols],
+        RowStr = [cond(X == 1, 'X', '.') : X in Row], % Chapter1.3 && 12.3
+        println(RowStr),
+     end.
+
+problem(P) =>
+    P = {
+        {_, _, 2, _, 3, _},
+        {2, _, _, _, _, _},
+        {_, _, 2, 4, _, 3},
+        {1, _, 3, 4, _, _},
+        {_, _, _, _, _, 3},
+        {_, 3, _, 3, _, _}
+    }.
+
+ex4 =>
+    ms.
+
+% ================== Exercise 5. ====================================
+
+zebra_constraints(Nations, Colors, Professions, Animals, Drinks) =>
+    Nations = [Englishman, Spaniard, Japanese, Italian, Norwegian],
+    Nations :: 1..5,
+    all_different(Nations),
+    
+    Colors = [Red, Green, White, Yellow, Blue],
+    Colors :: 1..5,
+    all_different(Colors),
+    
+    Professions = [Painter, Sculptor, Diplomat, Violinist, Doctor],
+    Professions :: 1..5,
+    all_different(Professions),
+    
+    Animals = [Dog, Snails, Fox, Horse, Zebra],
+    Animals :: 1..5,
+    all_different(Animals),
+    
+    Drinks = [Tea, Coffee, Milk, FruitJuice, Water],
+    Drinks :: 1..5,
+    all_different(Drinks),
+    
+    Englishman #= Red,
+    Spaniard #= Dog,
+    Japanese #= Painter,
+    Italian #= Tea,
+    Norwegian #= 1, % 设置成2的话，输出12种答案
+    Green #= Coffee,
+    Green #= White + 1,
+    Sculptor #= Snails,
+    Diplomat #= Yellow,
+    Milk #= 3,
+    abs(Norwegian - Blue) #= 1,
+    Violinist #= FruitJuice,
+    abs(Fox - Doctor) #= 1,
+    abs(Horse - Diplomat) #= 1.
+
+zebra_problem =>
+    zebra_constraints(Nations, Colors, Professions, Animals, Drinks),
+    
+    AllVars = Nations ++ Colors ++ Professions ++ Animals ++ Drinks,
+    solve(AllVars),
+    
+    println("\nSolution to the Zebra Problem:"),
+    println("=============================="),
+    
+    % 把对应的数字转换成字符串
+    NationNames = ["Englishman", "Spaniard", "Japanese", "Italian", "Norwegian"],
+    ColorNames = ["Red", "Green", "White", "Yellow", "Blue"],
+    ProfessionNames = ["Painter", "Sculptor", "Diplomat", "Violinist", "Doctor"],
+    AnimalNames = ["Dog", "Snails", "Fox", "Horse", "Zebra"],
+    DrinkNames = ["Tea", "Coffee", "Milk", "FruitJuice", "Water"],
+    
+    foreach(House in 1..5)
+        printf("House %d: ", House),
+        
+        Nation = "",
+        Color = "",
+        Profession = "",
+        Animal = "",
+        Drink = "",
+        
+        foreach(I in 1..5)
+            if Nations[I] == House then
+                Nation := NationNames[I]
+            end,
+            if Colors[I] == House then
+                Color := ColorNames[I]
+            end,
+            if Professions[I] == House then
+                Profession := ProfessionNames[I]
+            end,
+            if Animals[I] == House then
+                Animal := AnimalNames[I]
+            end,
+            if Drinks[I] == House then
+                Drink := DrinkNames[I]
+            end
+        end,
+        
+        printf("%s, %s house, %s, owns %s, drinks %s\n", 
+               Nation, Color, Profession, Animal, Drink)
+    end,
+    
+    nl,
+    println("\nAnswers to the questions:"),
+    println("========================"),
+
+    println("\nWho owns the zebra?"),
+    ZebraHouse = Animals[5],  % Zebra is the 5th animal
+    foreach(J in 1..5)
+        if Nations[J] == ZebraHouse then
+            printf("The %s owns the zebra (in house %d)\n", NationNames[J], ZebraHouse)
+        end
+    end,
+    
+    println("\nWho drinks water?"),
+    WaterHouse = Drinks[5],   % Water is the 5th drink
+    foreach(J in 1..5)
+        if Nations[J] == WaterHouse then
+            printf("The %s drinks water (in house %d)\n", NationNames[J], WaterHouse)
+        end
+    end,
+    
+    Sol1 = Nations ++ Colors ++ Professions ++ Animals ++ Drinks,
+    
+    nl,
+    println("Checking solution uniqueness..."),
+    check_uniqueness(Sol1).
+
+% check独立性并统计数量
+check_uniqueness(FirstSolution) =>
+
+    %使用 findall 来寻找所有满足 zebra_constraints 限制条件的解
+    Solutions = findall(Sol, (
+        zebra_constraints(Nations, Colors, Professions, Animals, Drinks),
+        AllVars = Nations ++ Colors ++ Professions ++ Animals ++ Drinks,
+        solve(AllVars),
+        Sol = AllVars
+    )),
+    
+    printf("Total number of solutions: %d\n", Solutions.length),
+    
+    if Solutions.length == 1 then
+        println("The solution is UNIQUE!")
+    else
+        println("Multiple solutions exist! Here are all solutions:"),
+        println("================================================"),
+        
+        NationNames = ["Englishman", "Spaniard", "Japanese", "Italian", "Norwegian"],
+        ColorNames = ["Red", "Green", "White", "Yellow", "Blue"],
+        ProfessionNames = ["Painter", "Sculptor", "Diplomat", "Violinist", "Doctor"],
+        AnimalNames = ["Dog", "Snails", "Fox", "Horse", "Zebra"],
+        DrinkNames = ["Tea", "Coffee", "Milk", "FruitJuice", "Water"],
+        
+	%遍历所有解：遍历所有解 Solutions，通过索引 SolIdx 输出每个解，并打印解的编号。
+
+        foreach(SolIdx in 1..Solutions.length)
+            Sol = Solutions[SolIdx],
+            printf("\nSolution %d:\n", SolIdx),
+            printf("-----------\n"),
+            
+	    % 提取解的每个变量：根据 Sol 中的值，提取每个解的国家、颜色、职业、动物和饮料。
+	    % 每个变量（如 Nations_Sol）代表一个解中的相应类别的顺序。
+
+            Nations_Sol = [Sol[1], Sol[2], Sol[3], Sol[4], Sol[5]],
+            Colors_Sol = [Sol[6], Sol[7], Sol[8], Sol[9], Sol[10]],
+            Professions_Sol = [Sol[11], Sol[12], Sol[13], Sol[14], Sol[15]],
+            Animals_Sol = [Sol[16], Sol[17], Sol[18], Sol[19], Sol[20]],
+            Drinks_Sol = [Sol[21], Sol[22], Sol[23], Sol[24], Sol[25]],
+            
+            foreach(House in 1..5)
+                printf("House %d: ", House),
+                
+                Nation = "",
+                Color = "",
+                Profession = "",
+                Animal = "",
+                Drink = "",
+                
+                foreach(I in 1..5)
+                    if Nations_Sol[I] == House then
+                        Nation := NationNames[I]
+                    end,
+                    if Colors_Sol[I] == House then
+                        Color := ColorNames[I]
+                    end,
+                    if Professions_Sol[I] == House then
+                        Profession := ProfessionNames[I]
+                    end,
+                    if Animals_Sol[I] == House then
+                        Animal := AnimalNames[I]
+                    end,
+                    if Drinks_Sol[I] == House then
+                        Drink := DrinkNames[I]
+                    end
+                end,
+                
+                printf("%s, %s house, %s, owns %s, drinks %s\n", 
+                       Nation, Color, Profession, Animal, Drink)
+            end
+        end
+    end.
+
+ex5 => 
+    zebra_problem.
+
+
+
+% ================== Exercise 6. ====================================
+map_coloring_constraints(NumColors, Countries) =>
+    Countries = [Belgium, Denmark, France, Germany, Luxembourg, Netherlands],
+    Countries :: 1..NumColors,
+    
+    Belgium #!= France,
+    Belgium #!= Germany,
+    Belgium #!= Luxembourg,
+    Belgium #!= Netherlands,
+    
+    Denmark #!= Germany,
+    
+    France #!= Germany,
+    France #!= Luxembourg,
+    
+    Germany #!= Netherlands,
+    Germany #!= Luxembourg,
+    
+    Belgium #= 1,
+    
+    solve(Countries).
+
+solve_map_coloring(NumColors) =>
+    printf("Solving map coloring with %d colors:\n", NumColors),
+    printf("====================================\n"),
+    
+    Solutions = findall(Countries, map_coloring_constraints(NumColors, Countries)),
+    
+    CountryNames = ["Belgium", "Denmark", "France", "Germany", "Luxembourg", "Netherlands"],
+    
+    if Solutions.length == 0 then
+        printf("No solutions found with %d colors.\n\n", NumColors)
+    else
+        printf("Found %d solutions with %d colors:\n\n", Solutions.length, NumColors),
+
+        
+        foreach(SolIdx in 1..Solutions.length)
+            Sol = Solutions[SolIdx],
+            printf("Solution %d:\n", SolIdx),
+            foreach(I in 1..6)
+               % printf("  %s: Color %d\n", CountryNames[I], Sol[I])
+	        printf("\"%s\": \"Color %d\"", CountryNames[I], Sol[I]),
+                if I < 6 then
+                    printf(", ")
+                end
+            end,
+            printf("\n")
+
+	    %printf("Verification: "),
+            %verify_solution(Sol),
+            %printf("\n")
+        end
+    end.
+
+find_minimum_colors =>
+    MinColors = 999,
+    foreach(NumColors in 1..6)
+        Solutions = findall(Countries, map_coloring_constraints(NumColors, Countries)),
+        if Solutions.length > 0 then
+            if MinColors == 999 then
+                MinColors := NumColors
+            end
+        end
+    end,
+    
+    if MinColors == 999 then
+        printf("Could not find a solution with up to 6 colors!\n")
+    else
+        printf("Minimum number of colors needed: %d\n\n", MinColors),
+        solve_map_coloring(MinColors)
+    end.
+
+verify_solution(Solution) =>
+    [Belgium, Denmark, France, Germany, Luxembourg, Netherlands] = Solution,
+    CountryNames = ["Belgium", "Denmark", "France", "Germany", "Luxembourg", "Netherlands"],
+    
+    % Check all neighbor constraints
+    Violations = [],
+    
+    if Belgium == France then Violations := Violations ++ ["Belgium-France"] end,
+    if Belgium == Germany then Violations := Violations ++ ["Belgium-Germany"] end,
+    if Belgium == Luxembourg then Violations := Violations ++ ["Belgium-Luxembourg"] end,
+    if Belgium == Netherlands then Violations := Violations ++ ["Belgium-Netherlands"] end,
+    if Denmark == Germany then Violations := Violations ++ ["Denmark-Germany"] end,
+    if France == Germany then Violations := Violations ++ ["France-Germany"] end,
+    if France == Luxembourg then Violations := Violations ++ ["France-Luxembourg"] end,
+    if Germany == Netherlands then Violations := Violations ++ ["Germany-Netherlands"] end,
+    if Germany == Luxembourg then Violations := Violations ++ ["Germany-Luxembourg"] end,
+    
+    if Violations.length == 0 then
+        printf("Solution is VALID!\n"),
+        %foreach(I in 1..6)
+        %    printf("  %s: Color %d\n", CountryNames[I], Solution[I])
+        %end
+    else
+        printf("Solution is INVALID! Violations: %w\n", Violations)
+    end.
+
+ex61 =>
+    find_minimum_colors,
+    nl,
+    foreach(NumColors in 1..3)
+        solve_map_coloring(NumColors)
+    end.
+
+
+% ================== Exercise 8. ====================================
+
+
+
+
+% ================== Exercise 8. Clean Version ====================================
+
+solve_kakuro(Board) =>
+    Rows = Board.len,
+    Cols = Board[1].len,
+    Solution = new_array(Rows, Cols),
+    
+    foreach(I in 1..Rows, J in 1..Cols)
+        Cell = Board[I,J],
+        if Cell == 0 then
+            Solution[I,J] = 0
+        elseif compound(Cell) then  % 检查是否为元组 (row_sum, col_sum)
+            Solution[I,J] = 0
+        else  
+            Solution[I,J] :: 1..9
+        end
+    end,
+    
+    extract_constraints(Board, Solution),
+    solve(Solution),
+    % print(Solution),
+    print_solution(Board, Solution).
+
+extract_constraints(Board, Solution) =>
+    Rows = Board.len,
+    Cols = Board[1].len,
+
+    foreach(I in 1..Rows, J in 1..Cols)
+        Cell = Board[I,J],
+        if compound(Cell), Cell = (RowSum, ColSum) then
+            if RowSum > 0 then
+                add_row_constraint_from_position(Board, Solution, I, J, RowSum)
+            end,
+            if ColSum > 0 then
+                add_col_constraint_from_position(Board, Solution, I, J, ColSum)
+            end
+        end
+    end.
+
+
+%%%%%%%%%%%%%%%%% While Version %%%%%%%%%%%%%%%%%
+
+add_row_constraint_from_position1(Board, Solution, Row, StartCol, Sum) =>
+    Cols = Board[1].len,
+    Vars = [],
+    J = StartCol + 1, % 收集从StartCol+1开始的连续空白格
+
+    while (J <= Cols)
+        Cell = Board[Row,J],
+        if var(Cell) then  % 如果是变量(_), 待填的数字
+            Vars := Vars ++ [Solution[Row,J]],
+            J := J + 1
+        else
+            J := Cols + 1  % 遇到非空白格，让J越界停止, 强制退出循环
+        end
+    end,
+
+    if Vars.len > 0 then
+        sum(Vars) #= Sum,
+        all_different(Vars)
+    end.
+
+add_col_constraint_from_position1(Board, Solution, StartRow, Col, Sum) =>
+    Rows = Board.len,
+    Vars = [],
+    I = StartRow + 1, % 收集从StartRow+1开始的连续空白格
+
+    while (I <= Rows)
+        Cell = Board[I,Col],
+        if var(Cell) then  % 如果是变量(_), 待填的数字
+            Vars := Vars ++ [Solution[I,Col]],
+            I := I + 1
+        else
+            I := Rows + 1  % % 遇到非空白格，让I越界停止, 强制退出循环
+        end
+    end,
+
+    if Vars.len > 0 then
+        sum(Vars) #= Sum,
+        all_different(Vars)
+    end.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+add_row_constraint_from_position(Board, Solution, Row, StartCol, Sum) => 
+    Cols = Board[1].len, 
+    Vars = [], 
+
+    foreach(J in (StartCol + 1)..Cols, break(Board[Row,J] != '_'))
+        Vars := Vars ++ [Solution[Row,J]]
+    end,
+    if Vars.len > 0 then 
+        sum(Vars) #= Sum, 
+        all_different(Vars) 
+    end.
+
+add_col_constraint_from_position(Board, Solution, StartRow, Col, Sum) => 
+    Rows = Board.len, 
+    Vars = [], 
+
+    foreach(I in (StartRow + 1)..Rows, break(Board[I,Col] != '_'))
+        Vars := Vars ++ [Solution[I,Col]]
+    end,
+    if Vars.len > 0 then 
+        sum(Vars) #= Sum, 
+        all_different(Vars) 
+    end.
+
+print_solution(Board, Solution) =>
+    println("Kakuro Puzzle Solution:"),
+    println("       1 2 3 4 5 6 7 8 9"),
+    println("------------------------"),
+    Rows = Board.len,
+    Cols = Board[1].len,
+    foreach(I in 1..Rows)
+        printf("Row %d| ", I),
+        foreach(J in 1..Cols)
+            Cell = Board[I,J],
+            if var(Cell) then  % 空白格
+                printf("%d ", Solution[I,J])
+            else
+                printf(". ")
+            end
+        end,
+        nl
+    end.
+
+========================================================
+
+ex8 =>
+
+    Board1 = [
+        [0, 0, (0,11), (0,4), 0, 0],
+        [0, (5,14), _, _, (0,10), 0],
+        [(17,0), _, _, _, _, (3,0)],
+        [(6,0), _, _, (4,3), _, _],
+        [0, (10,0), _, _, _, _],
+        [0, 0, (3,0), _, _, 0]
+    ],
+
+    Board2 = [
+        [0, (0,29), (0,26), 0, 0, (0,17), (0,29), 0, 0],
+        [(10,0), _, _, (0,16), (17,0), _, _,(0,17), (0,16)],
+        [(23,0), _, _, _, (29,24), _, _, _, _],
+        [(29,0), _, _, _, _, (24,23), _, _, _],
+        [(17,0), _, _, (24,30), _, _, _, (0,30), (0,29)],
+        [0, (0,17), (23,7), _, _, _, (17,17), _, _],
+        [(23,0), _, _, _, (30,17), _, _, _, _],
+        [(24,0), _, _, _, _, (24,0), _, _, _],
+	[0, 0, (0,16), _, _, 0, (14,0), _, _]
+    ], 
+    println("\n>>>>>>>>>>>>>>>>>>>>>> 6 * 6 <<<<<<<<<<<<<<<<<<<\n"),
+    solve_kakuro(Board1),
+    nl,
+    println(">>>>>>>>>>>>>>>>>>>>>> 9 * 9 <<<<<<<<<<<<<<<<<<<\n"),
+    solve_kakuro(Board2).

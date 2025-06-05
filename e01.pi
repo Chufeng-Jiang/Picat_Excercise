@@ -1,0 +1,311 @@
+%================== Exercise 1. print_staircase =======================================
+
+print_staircase =>
+    N = 3,
+    println("\nUsing iteration"),
+    itr_print_staircase(N),
+
+    println("\nUsing tail recursive"),
+    tr_print_staircase(N, 1).
+
+% -------- Using Iteration --------
+
+itr_print_staircase(N) =>
+    TotalLines = 2 * N,
+    foreach(Line in 1..TotalLines)
+        Layer = (Line + 1) // 2,
+        Spaces = (N - Layer) * 4,
+        print_spaces(Spaces),
+        if Line mod 2 == 1 then
+            print_horizontal_line(Layer)
+        else
+            print_vertical_line(Layer)
+        end
+    end,
+    print_spaces(0),  
+    print_horizontal_line(N).
+
+% -------- Using Tail Recursive --------
+
+tr_print_staircase(N, CurrentLayer) =>
+    if CurrentLayer > N then
+        print_spaces(0),
+        print_horizontal_line(N)
+    else
+        Spaces = (N - CurrentLayer) * 4,
+        print_spaces(Spaces),
+        print_horizontal_line(CurrentLayer),
+
+        print_spaces(Spaces),
+        print_vertical_line(CurrentLayer),
+
+        tr_print_staircase(N, CurrentLayer + 1)
+    end.
+
+% -------- Print Spaces --------
+print_spaces(0) => true.
+print_spaces(N) =>
+    print(' '),
+    print_spaces(N - 1).
+
+% -------- Draw Lines --------
+print_horizontal_line(Steps) =>
+    Out = "",
+    foreach(I in 1..Steps)
+        Out := Out ++ "+---"
+    end,
+    Out := Out ++ "+",
+    println(Out).
+
+print_vertical_line(Steps) =>
+    Out = "",
+    foreach(I in 1..Steps)
+        Out := Out ++ "|   "
+    end,
+    Out := Out ++ "|",
+    println(Out).
+
+% ================== Exercise 2. Pascal's Triangle ====================================
+
+% factorial(0) = 1.
+% factorial(N) = N * factorial(N - 1) => N > 0.
+
+combination(N, K) = factorial(N) // (factorial(K) * factorial(N - K)).
+
+% --------- Iteration --------- 
+pascals_triangle_iter(N) =>
+    foreach(Row in 0..N-1)
+        Out = "",
+        foreach(Col in 0..Row)
+            Val = combination(Row, Col),
+            Out := Out ++ to_string(Val) ++ " "
+        end,
+        println(Out)
+    end.
+
+% --------- Tail Reccursion --------- 
+
+print_row(I, J, Acc) =>
+    if J > I then
+        println(Acc)
+    else
+        Val = combination(I, J),
+        NewAcc = Acc ++ to_string(Val) ++ " ",
+        print_row(I, J + 1, NewAcc)
+    end.
+
+
+pascals_triangle_tail(N) =>
+    pascals_triangle_tail(N, 0).
+
+pascals_triangle_tail(N, I) =>
+    if I >= N then
+        true
+    else
+        print_row(I, 0, ""),
+        pascals_triangle_tail(N, I + 1)
+    end.
+
+% --------- Normal Recursion --------- 
+
+print_row_recursive(I, J) =>
+    if J > I then
+        true
+    else
+        Val = combination(I, J),
+        printf("%w ", Val),
+        print_row_recursive(I, J + 1)
+    end.
+
+pascals_triangle_recursive(N, I) =>
+    if I >= N then
+        true
+    else
+        print_row_recursive(I, 0),
+        println(''),
+        pascals_triangle_recursive(N, I + 1)
+    end.
+
+test_pascals_triangle =>
+    println("Pascal's Triangle Iteration:"),
+    pascals_triangle_iter(4),
+
+    println("\nPascal's Triangle Tail Recursion:"),
+    pascals_triangle_tail(4),
+
+    println("\nPascal's Triangle Normal Recursion:"),
+    pascals_triangle_recursive(4, 0).
+
+
+% ================== Exercise 3. Transpose Matrix ====================================
+
+transpose(Matrix) = Transposed  =>
+    N = length(Matrix),
+    M = length(Matrix[1]),
+    
+    Transposed = new_array(M, N),
+    
+    foreach (I in 1..N, J in 1..M)
+        Transposed[J, I] = Matrix[I, J]
+    end.
+    
+
+test_transpose =>
+    Matrix = {{1, 2, 3},
+              {4, 5, 6}},
+    
+    Transposed = transpose(Matrix),
+    
+    ExpectedTransposed = {{1, 4},
+                          {2, 5},
+                          {3, 6}},
+    
+    if Transposed == ExpectedTransposed then
+        println("Test passed!")
+    else
+        println("Test failed!")
+    end.
+
+% ================== Exercise 4. Number of Zeroes ====================================
+
+number_of_zeroes(List) = Count =>
+    count_zeroes(List, 0) = Count.
+
+count_zeroes([], Acc) = Acc.
+count_zeroes([0|Rest], Acc) = count_zeroes(Rest, Acc + 1).
+count_zeroes([_Head|Rest], Acc) = count_zeroes(Rest, Acc).
+
+test_number_of_zeroes =>
+    List = [1, 0, 3, 0, 5, 0, 7],
+    Zeroes = number_of_zeroes(List),
+    println(List),
+    println("Number of zeroes: "),
+    println(Zeroes).
+
+% ================== Exercise 5. All Permutations ====================================
+
+all_permutations([]) = [[]].
+all_permutations(L) = [[H|T] : H in L, T in all_permutations(delete(L, H))].
+    
+test_permutations =>
+    L = [1,2,3],
+    Perms = all_permutations(L),
+    println("Permutations of [1,2,3]:"),
+    println(Perms).
+
+
+% ================== Exercise 6. Two Function Facts ====================================
+
+% Two Function Facts
+qsort([]) = [].
+qsort([H|T]) = qsort([E : E in T, E =< H]) ++ [H] ++ qsort([E : E in T, E > H]).
+
+qsort_example => 
+    L = [17, 3, 41, 25, 8, 1, 6, 40], 
+    println("Original list:"), 
+    println(L), 
+    Sorted = qsort(L), 
+    println("Sorted list:"), 
+    println(Sorted).
+
+% ================== Exercise 7. Fibonacci Numbers-if-else ====================================
+table
+fib(N) = F =>
+    if (N == 1)
+        F = 1
+    elseif (N == 2)
+        F = 1
+    else
+        F = fib(N-1) + fib(N-2)
+    end.
+
+test_fib =>
+    println("Fib[6] is:"),
+    println(fib(6)).
+% ================== Exercise 8. Tribonacci ====================================
+table
+tib(1) = 1.
+tib(2) = 1.
+tib(3) = 2.
+tib(N) = T, N > 3 => T = tib(N-1) + tib(N-2) + tib(N-3).
+
+test_tib =>
+    println("Tib[6] is:"),
+    println(tib(6)).
+
+% ================== Exercise 9. prime numbers ====================================
+
+is_prime(P) =>
+    is_prime(P, 2).
+
+is_prime(P, M) =>
+    M * M > P -> true;  
+    P mod M =:= 0 -> false;  
+    is_prime(P, M + 1).
+
+primes(N) =>
+    primes(N, 2, []).
+
+primes(N, P, Acc) =>
+    P > N -> Acc;  
+    is_prime(P) -> primes(N, P + 1, [P | Acc]);
+    primes(N, P + 1, Acc).  % If P is not prime, continue with the next number.
+
+test_primes =>
+    Primes = primes(100),
+    println(Primes).
+
+
+% ================== Exercise 10. Tail-Recursive ====================================
+rev(L) = rev(L, []).
+
+rev([], Acc) = Acc.
+rev([H|T], Acc) = rev(T, [H | Acc]).
+
+test_rev =>
+    List = [1, 2, 3, 4],
+    Reversed = rev(List),
+    println(Reversed).
+
+my_sum(L) = my_sum(L, 0).
+
+my_sum([], Acc) = Acc.
+my_sum([H|T], Acc) = my_sum(T, Acc + H).
+
+test_sum =>
+    List = [1, 2, 3, 4],
+    Sum = my_sum(List),
+    println(Sum).
+
+% --------- Main ---------
+main =>
+    println("=== Exercise 1. print_staircase ==="),
+    print_staircase,
+
+    println("\n=== Exercise 2. Pascal's Triangle ==="),
+    test_pascals_triangle,
+
+    println("\n=== Exercise 3. Transpose Matrix ==="),
+    test_transpose,
+
+    println("\n=== Exercise 4. Number of Zeroes ==="),
+    test_number_of_zeroes, 
+    
+    println("\n=== Exercise 5. All Permutations ==="),
+    test_permutations,
+
+    println("\n=== Exercise 6. Two Function Facts ==="),
+    qsort_example,
+
+    println("\n=== Exercise 7. Fibonacci Numbers-if-else ==="),
+    test_fib,
+    
+    println("\n=== Exercise 8. Tribonacci ==="),
+    test_tib,
+
+    println("\n=== Exercise 9. Prime Numbers ==="),
+    test_primes,
+    
+    println("\n=== Exercise 10. Tail-Recursive ==="),
+    test_rev,
+    test_sum.

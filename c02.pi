@@ -1,0 +1,237 @@
+% import cp.
+import sat.
+% import mip.
+
+% --------- 2.2 SEND+MORE=MONEY ---------
+
+smm =>
+    Digits = [S, E, N, D, M, O, R, Y],
+    Digits :: 0..9,            % 变量取值范围 0 到 9
+    all_different(Digits),     % 所有数字互不相同
+    S #> 0,                   % S 不能为 0（最高位非零）
+    M #> 0,                   % M 不能为 0（最高位非零）
+
+    % 计算 SEND + MORE = MONEY 的约束
+    1000 * S + 100 * E + 10 * N + D
+  + 1000 * M + 100 * O + 10 * R + E
+  #= 10000 * M + 1000 * O + 100 * N + 10 * E + Y,
+
+    solve(Digits),             
+    println(Digits).  
+    
+% --------- 2.3 Sudoku ---------
+sudoku =>
+    board(Board),
+    sudoku(Board),
+    println(Board),
+    nl.                           % newline
+
+sudoku(Board) =>
+    N = Board.length,             % 数独维度，比如4
+    N1 = ceiling(sqrt(N)),        % 块大小，比如2
+
+    Board :: 1..N,                % 数字取值范围1~N
+
+    % 行约束：每行数字互不相同
+    foreach(I in 1..N)
+        all_different([Board[I, J] : J in 1..N])
+    end,
+
+    % 列约束：每列数字互不相同
+    foreach(J in 1..N)
+        all_different([Board[I, J] : I in 1..N])
+    end,
+
+    % 块约束：每个块内数字互不相同
+    foreach(I in 1..N1..N, J in 1..N1..N)
+        all_different([Board[I + K, J + L] : K in 0..N1 - 1, L in 0..N1 - 1])
+    end,
+
+    solve(Board).
+
+board(Board) =>
+    Board = {{4, _, _, _},
+             {_, 1, _, _},
+             {_, _, _, 1},
+             {_, _, _, 2}}.
+
+
+% --------- 2.4 Minesweeper ---------
+
+ms =>
+    problem(Matrix),
+    NRows = Matrix.length,             
+    NCols = Matrix[1].length,          
+
+    % 决策变量：每个位置是否有地雷
+    Mines = new_array(NRows, NCols),   % 创建一个新的 NRows x NCols 的数组
+    Mines :: 0..1,                     % 决策变量的取值为 0 或 1（0 表示没有地雷，1 表示有地雷）
+
+ 
+    foreach(I in 1..NRows, J in 1..NCols)
+        % 只有在该格子有数字提示时，才进行检查
+        if ground(Matrix[I, J]) then
+            % 该格子周围地雷的数量必须等于 Matrix[I,J]
+            Matrix[I, J] #= sum([Mines[I + A, J + B] :
+						A in -1..1, B in -1..1,
+						I + A > 0, J + B > 0,
+						I + A =< NRows, J + B =< NCols]),
+            
+            % 如果该格子有数字提示，则该格子不能是地雷
+            Mines[I, J] #= 0
+        end
+    end,
+
+    solve(Mines),
+    println(Mines).
+
+problem(P) =>
+    P = {
+        {_, _, 2, _, 3, _},
+        {2, _, _, _, _, _},
+        {_, _, 2, 4, _, 3},
+        {1, _, 3, 4, _, _},
+        {_, _, _, _, _, 3},
+        {_, 3, _, 3, _, _}
+    }.
+
+
+% --------- 2.5 Diet ---------
+
+dt =>
+    data(Prices, Limits, Nutrition),
+
+    Len = length(Prices),
+
+    Xs = new_array(Len), % 决策变量：每种产品购买的数量，范围0到10
+    Xs :: 0..10,
+
+    scalar_product(Nutrition[1], Xs, #>=, Limits[1]), % 热量 >= 500
+    scalar_product(Nutrition[2], Xs, #>=, Limits[2]), % 巧克力 >= 6
+    scalar_product(Nutrition[3], Xs, #>=, Limits[3]), % 糖分 >= 10
+    scalar_product(Nutrition[4], Xs, #>=, Limits[4]), % 脂肪 >= 8
+
+    scalar_product(Prices, Xs, XSum),
+
+    solve($[min(XSum)], Xs),
+
+    writeln(Xs).
+
+
+scalar_product(A, Xs, Product) =>
+    Product #= sum([A[I] * Xs[I] : I in 1..A.length]).
+
+scalar_product(A, Xs, Rel, Product) =>
+    scalar_product(A, Xs, P),
+    call(Rel, P, Product). % 调用 Rel 这个操作符函数，传入两个参数 P 和 Product
+
+
+
+data(Prices, Limits, Nutrition) => 
+    Prices = {50, 20, 30, 80},
+    Limits = {500, 6, 10, 8},
+
+    Nutrition = {
+        {400, 200, 150, 500}, % 热量
+        {  3,   2,   0,   0}, % 巧克力
+        {  2,   2,   4,   4}, % 糖分
+        {  2,   4,   1,   5}  % 脂肪
+    }.
+
+
+% --------- 2.6 The Coins Grid Problem ---------
+
+coins =>
+    N = 31,
+    C = 14,
+    time2(coins(N, C)).
+
+coins(N, C) =>
+    X = new_array(N, N),
+    X :: 0..1,
+    foreach (I in 1..N)
+        C #= sum([X[I, J] : J in 1..N]),   % 行约束
+        C #= sum([X[J, I] : J in 1..N])    % 列约束
+    end,
+
+    % 二次水平距离
+    Sum #= sum([(X[I, J] * abs(I - J) * abs(I - J)) : I in 1..N, J in 1..N]),
+    solve($[min(Sum)], X),
+    println(sum=Sum).
+
+% --------- 2.7 N-Queens ---------
+
+queens1(N, Q) =>
+    Q = new_list(N),
+    Q :: 1..N,
+    foreach (I in 1..N, J in 1..N, I < J)
+        Q[I] #!= Q[J],    % columns
+        Q[I] - I #!= Q[J] - J,    % diagonal 1
+        Q[I] + I #!= Q[J] + J     % diagonal 2
+    end,
+    solve([ff], Q).
+
+
+queens1 =>
+    N = 8,              % 设置为8皇后问题
+    time(queens1(N, Q)), % 使用 time/1 来测量执行时间
+    println(Q).         % 打印解的结果
+
+
+queens2(N, Q) =>
+    Q = new_list(N),
+    Q :: 1..N,
+    all_different(Q),  % 确保所有皇后的位置列是不同的，即每列上只能放一个皇后
+    all_different([$Q[I] - I : I in 1..N]),  % 确保没有皇后在主对角线冲突, 通过检查 Q[I] - I 的值是否唯一，避免了主对角线上的冲突
+    all_different([$Q[I] + I : I in 1..N]),  % 确保没有皇后在副对角线冲突
+    solve([ff], Q). % [ff] 代表求解时使用的策略 first-fail labeling strategy
+
+
+queens2 =>
+    N = 8,               % 设置为8皇后问题
+    time(queens2(N, Q)), % 使用 time/1 来测量执行时间
+    println(Q).          % 打印解的结果
+
+
+queens3(N, Q) =>
+    Q = new_array(N, N),   % 创建一个 N x N 的矩阵
+    Q :: 0..1,             % 矩阵中的每个元素只能是 0 或 1，表示是否放置皇后
+    foreach (I in 1..N)    % 每行放置 1 个皇后
+        sum([Q[I, J] : J in 1..N]) #= 1
+    end,
+    foreach (J in 1..N)    % 每列放置 1 个皇后
+        sum([Q[I, J] : I in 1..N]) #= 1
+    end,
+    foreach (K in 1-N..N-1)  % 每条反斜对角线（\）最多放置 1 个皇后
+        sum([Q[I, J] : I in 1..N, J in 1..N, I - J == K]) #=< 1
+    end,
+    foreach (K in 2..2*N)  % 每条斜对角线（/）最多放置 1 个皇后
+        sum([Q[I, J] : I in 1..N, J in 1..N, I + J == K]) #=< 1
+    end,
+    solve(Q).               % 求解问题
+
+
+
+queens3(N, Q) =>
+    Q = new_array(N, N),   % 创建一个 N x N 的矩阵
+    Q :: 0..1,             % 矩阵中的每个元素只能是 0 或 1，表示是否放置皇后
+    foreach (I in 1..N)    % 每行放置 1 个皇后
+        sum([Q[I, J] : J in 1..N]) #= 1
+    end,
+    foreach (J in 1..N)    % 每列放置 1 个皇后
+        sum([Q[I, J] : I in 1..N]) #= 1
+    end,
+    foreach (K in 1-N..N-1)  % 每条反斜对角线（\）最多放置 1 个皇后
+        sum([Q[I, J] : I in 1..N, J in 1..N, I - J == K]) #=< 1
+    end,
+    foreach (K in 2..2*N)  % 每条斜对角线（/）最多放置 1 个皇后
+        sum([Q[I, J] : I in 1..N, J in 1..N, I + J == K]) #=< 1
+    end,
+    solve(Q).               % 求解问题
+
+
+
+queens3 =>
+    N = 8,               % 设置为8皇后问题
+    time(queens3(N, Q)), % 使用 time/1 来测量执行时间
+    println(Q).  
