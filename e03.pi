@@ -1,0 +1,114 @@
+import cp.
+
+% ================== Exercise 1. ====================================
+% Generalized Langford sequence solver
+% n sets of integers 1..k, where each subsequent occurrence of i 
+% must appear exactly i+1 indices after the prior occurrence
+
+% Generalized Langford Sequence Solver
+
+langford_g1(N, K, Seq) =>
+    SeqLen = N * K,
+    Seq = new_list(SeqLen),
+    Seq :: 1 .. K,
+    
+    foreach (I in 1 .. K)
+        % Create position variables for each occurrence of number I
+        Positions = new_list(N),
+        Positions :: 1 .. SeqLen,
+        
+        % Link positions to sequence: Seq[Positions[j]] = I
+        foreach (J in 1 .. N)
+            element(Positions[J], Seq, I)
+        end,
+        
+        % Ensure positions are in ascending order
+        foreach (J in 1 .. N-1)
+            Positions[J] #< Positions[J+1]
+        end,
+        
+        % Constraint: consecutive occurrences must be exactly I+1 apart
+        foreach (J in 1 .. N-1)
+            Positions[J+1] #= Positions[J] + I + 1
+        end
+    end,
+    
+    solve(Seq).
+
+langford_g2(N, K, Solution, Position) =>
+    SeqLen = N * K,
+    
+    % Position array: Position[i][j] represents the j-th occurrence position of number i
+    Position = new_array(K, N),
+    Position :: 1 .. SeqLen,
+    
+    % Solution sequence
+    Solution = new_list(SeqLen),
+    Solution :: 1 .. K,
+    
+    % All positions must be distinct
+    all_distinct([Position[I,J] : I in 1 .. K, J in 1 .. N]),
+    
+    foreach (I in 1 .. K)
+        % Ensure positions are ordered for each number
+        foreach (J in 1 .. N-1)
+            Position[I,J] #< Position[I,J+1]
+        end,
+        
+        % Spacing constraint: consecutive occurrences exactly I+1 apart
+        foreach (J in 1 .. N-1)
+            Position[I,J+1] #= Position[I,J] + I + 1
+        end,
+        
+        % Link positions to solution: at each position, place the correct number
+        foreach (J in 1 .. N)
+            element(Position[I,J], Solution, I)
+        end
+    end,
+    
+    % Symmetry breaking
+    Solution[1] #< Solution[SeqLen],
+    
+    % Collect all variables for solving
+    Vars = Solution ++ [Position[I,J] : I in 1 .. K, J in 1 .. N],
+    solve(Vars).
+
+
+ex1 =>
+    println("-------- Method 1: --------"),
+    time(langford_g1(2, 3, Seq_1)),
+    println(Seq_1),
+
+    println("\n-------- Method 2: --------"),
+    time(langford_g2(2, 3, Sol, Pos)),
+    println(solution=Sol),
+    println(positions=Pos).
+
+
+
+% ================== Exercise . ====================================
+
+
+% ================== Exercise . ====================================
+
+
+% ================== Exercise . ====================================
+
+
+% ================== Exercise . ====================================
+
+
+% ================== Exercise . ====================================
+
+
+% ================== Exercise . ====================================
+
+
+% ================== Exercise . ====================================
+
+
+% ================== Exercise . ====================================
+
+
+% ================== Exercise . ====================================
+

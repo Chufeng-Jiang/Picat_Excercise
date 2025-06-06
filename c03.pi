@@ -1,0 +1,552 @@
+import cp, util.
+
+% --------- 3.2.1  ---------
+
+langford_1(K, Seq) =>
+    K2 = 2 * K,
+    Seq = new_list(K2),
+    Seq :: 1 .. K,
+    foreach (I in 1 .. K)
+        element(J1, Seq, I),
+        element(J2, Seq, I),
+        J2 #= J1 + I + 1
+    end,
+    solve(Seq).
+
+langford_2(K, Solution, Position) =>
+    K2 = 2 * K,
+    Position = new_list(K2), Position :: 1 .. K2,
+    Solution = new_list(K2), Solution :: 1 .. K,
+    all_distinct(Position),
+    foreach (I in 1 .. K)
+        Position[K + I] #= Position[I] + I + 1,
+        element(Position[I], Solution, I),
+        element(Position[K + I], Solution, I)
+    end,
+
+    % symmetry breaking:
+    Solution[1] #< Solution[K2],
+    Vars = Solution ++ Position,
+    solve(Vars).
+
+langford =>
+    println("-------- Method 1: --------"),
+    time(langford_1(8, Seq_1)),
+    println(Seq_1),
+
+    println("\n-------- Method 2: --------"),
+    time(langford_2(8, Solution, Position)),
+    println(solution = Solution),
+    println(position = Position).
+
+
+% --------- 3.3.1  ---------
+
+all_different0 =>
+    N = 4,
+    Xs = new_list(N),
+    Xs :: 0..N,
+    alldifferent_except_0(Xs),
+    solve(Xs),
+    println(Xs).
+
+alldifferent_except_0(Xs) =>
+    foreach (I in 2..Xs.length, J in 1..I-1)
+        (Xs[I] #!= 0 #/\ Xs[J] #!= 0) #=> (Xs[I] #!= Xs[J])
+    end.
+
+% --------- 3.3.2  ---------
+
+agatha =>
+    L = find_all(Killer, who_killed_agatha(Killer)),
+    println(killer=L).
+
+who_killed_agatha(Killer) =>
+    % Agatha, the butler, and Charles live in Dreadsbury Mansion,
+    % and are the only ones to live there.
+    N = 3,
+    Agatha = 1,
+    Butler = 2,
+    Charles = 3,
+    
+    % The killer is one of the three.
+    Killer :: [Agatha, Butler, Charles],
+    
+    % Define the Hates and Richer Boolean matrices
+    Hates = new_array(N, N),
+    Hates :: 0..1,
+    Richer = new_array(N, N),
+    Richer :: 0..1,
+
+    % A killer always hates, and is no richer than his victim.
+    foreach (I in 1..N)
+        Killer #= I #=> Hates[I, Agatha] #= 1,
+        Killer #= I #=> Richer[I, Agatha] #= 0
+    end,
+
+    % Define the concept of "richer":
+    % nobody is richer than him-/herself
+    foreach (I in 1..N)
+        Richer[I, I] #= 0
+    end,
+
+    % if I is richer than J, then J is not richer than I
+    foreach (I in 1..N, J in 1..N, I != J)
+        Richer[I, J] #= 1 #<=> Richer[J, I] #= 0
+    end,
+
+    % Charles hates nobody that Agatha hates.
+    foreach (I in 1..N)
+        Hates[Agatha, I] #= 1 #=> Hates[Charles, I] #= 0
+    end,
+
+    % Agatha hates everybody except the butler.
+    Hates[Agatha, Butler] #= 0,
+    Hates[Agatha, Charles] #= 1,
+    Hates[Agatha, Agatha] #= 1,
+
+    % The butler hates everyone not richer than Aunt Agatha.
+    foreach (I in 1..N)
+        Richer[I, Agatha] #= 0 #=> Hates[Butler, I] #= 1
+    end,
+
+    % The butler hates everyone whom Agatha hates.
+    foreach (I in 1..N)
+        Hates[Agatha, I] #= 1 #=> Hates[Butler, I] #= 1
+    end,
+
+    % Nobody hates everyone.
+    foreach (I in 1..N)
+        sum([Hates[I, J] : J in 1..N]) #=< 2
+    end,
+
+    % Who killed Agatha?
+    Vars = [Killer] ++ Hates ++ Richer,
+    solve(Vars).
+
+
+% --------- 3.5.1  ---------
+
+ms =>
+    selection(VarSels),
+    choice(ValSels),
+    Timeout = 10000, % Timeout in milliseconds
+    N = 7,           % size of problem
+    foreach (VarSel in VarSels, ValSel in ValSels)
+        time2(time_out(magic(N, _Square, VarSel, ValSel), Timeout, Status)),
+        println([VarSel, ValSel, Status])
+    end.
+
+magic(N, Square, VarSel, ValSel) =>
+    NN = N * N,
+    Sum = N * (NN + 1) // 2, % magical sum
+    Square = new_array(N, N),
+    Square :: 1..NN,
+    all_different(Square.vars()),
+    
+    foreach (I in 1..N)
+        Sum #= sum([Square[I, J] : J in 1..N]), % rows
+        Sum #= sum([Square[J, I] : J in 1..N]) % columns
+    end,
+
+    % diagonal sums
+    Sum #= sum([Square[I, I] : I in 1..N]),
+    Sum #= sum([Square[I, N - I + 1] : I in 1..N]),
+    
+    solve([VarSel, ValSel], Square).
+
+% Variable selection
+selection(VarSels) =>
+    VarSels = [backward, constr, degree, ff, ffc, ffd,
+               forward, inout, leftmost, max, min, up].
+
+% Value selection
+choice(ValSels) =>
+    ValSels = [down, reverse_split, split, up, updown].
+
+
+% --------- 3.6  ---------
+
+mf =>
+    data(1, Data, MaxPeople, MaxTime, Precedences),
+    schedule(Data, MaxPeople, MaxTime, Precedences).
+
+schedule(Data, MaxPeople, MaxTime, Precedences) =>
+    N = Data.length,
+    [_Names, PeopleNeeded, Duration] = Data.transpose(),
+
+    % 构建名字到索引的映射
+    NameIxMap = new_map([Data[I,1] = I : I in 1..N]),
+
+    % 决策变量：每个任务的开始时间和结束时间
+    Start = new_list(N),
+    Start :: 0..MaxTime,
+
+    End = new_list(N),
+    End :: 0..MaxTime,
+
+    NumPeople :: 0..MaxPeople,
+
+    % 应用 cumulative 全局约束
+    cumulative(Start, Duration, PeopleNeeded, NumPeople),
+
+    foreach (Task in 1..N)
+        End[Task] #= Start[Task] + Duration[Task]
+    end,
+
+    MaxEnd #= max(End),
+
+    foreach ([P1, P2] in Precedences)
+        End[NameIxMap.get(P1)] #< Start[NameIxMap.get(P2)]
+    end,
+
+    Vars = End ++ Start ++ [NumPeople],
+    solve($[ff, split, min(MaxEnd)], Vars),
+
+    nl,
+    println(numPeople = NumPeople),
+    println(maxEnd = MaxEnd),
+    println(start = Start),
+    println(end = End).
+
+data(1, Data, MaxPeople, MaxTime, Precedences) =>
+    Data = [
+        [piano , 3, 30],
+        [chair1, 1, 10],
+        [chair2, 1, 10],
+        [chair3, 1, 10],
+        [chair4, 1, 10],
+        [bed   , 3, 20],
+        [table , 2, 15],
+        [shelf1, 2, 15],
+        [shelf2, 2, 15],
+        [tv    , 2, 15]
+    ],
+
+    MaxPeople = 4,
+    MaxTime = sum([T : [_, _, T] in Data]),
+
+    Precedences = [
+        [shelf1, bed],
+        [shelf2, table],
+        [bed,    piano],
+        [tv,     table]
+    ].
+
+% --------- 3.7  ---------
+
+msg =>
+    time2(magic_sequence(100, Sequence)),
+    println(Sequence).
+
+magic_sequence(N, Sequence) =>
+    Sequence = new_list(N),
+    Sequence :: 0..N-1,
+
+    N #= sum(Sequence),  % 序列的总和为 N
+    
+    % 创建整数列表 Integers，表示每个数字的索引 [0, 1, 2, ..., N-1]
+    Integers = [I : I in 0..N-1],
+    
+    % 计算序列和对应数字的点积，结果为 N
+    scalar_product(Integers, Sequence, N),
+
+    % 创建 Pairs 列表，形式为 K-V，表示数字 K 在序列中出现的次数为 V
+    Pairs = [$I - Sequence[I+1] : I in 0..N-1],
+
+    % 使用 global_cardinality 约束，要求序列中每个数字出现的次数符合要求
+    global_cardinality(Sequence, Pairs),
+
+    solve([ff], Sequence).
+
+
+% --------- 3.8  ---------
+kt =>
+    N = 6,
+    time2(knight(N, X)),
+    println(x = X),
+    println("X:"),
+    print_matrix(X),
+    extract_tour(X, Tour),
+    println("Tour:"),
+    print_matrix(Tour).
+
+% Knight’s tour for even N*N.
+knight(N, X) =>
+    X = new_array(N, N),
+    X :: 1..N*N,
+    XVars = X.vars(),
+
+    % restrict the domains of each square
+    foreach(I in 1..N, J in 1..N)
+        D = [-1, -2, 1, 2],
+        Dom = [(I + A - 1) * N + J + B : A in D, B in D, 
+               abs(A) + abs(B) == 3,
+               member(I + A, 1..N), member(J + B, 1..N)],
+        Dom.length > 0,
+        X[I, J] :: Dom
+    end,
+    circuit(XVars),
+    solve([ffc, split], XVars).
+
+extract_tour(X, Tour) =>
+    N = X.length,
+    Tour = new_array(N, N),
+    K = 1,
+    Tour[1, 1] := K,
+    Next = X[1, 1],
+    while (K < N*N)
+        K := K + 1,
+        I = 1 + ((Next - 1) div N),
+        J = 1 + ((Next - 1) mod N),
+        Tour[I, J] := K,
+        Next := X[I, J]
+    end.
+
+print_matrix(M) =>
+    N = M.length,
+    V = (N*N).to_string().length,
+    Format = "% " ++ (V + 1).to_string() ++ "d",
+    foreach(I in 1..N)
+        foreach(J in 1..N)
+            printf(Format, M[I, J])
+        end,
+        nl
+    end,
+    nl.
+
+
+% --------- 3.9  ---------
+
+nr =>
+    N = 6,
+    X = new_list(N),
+    X :: 0..1,
+    global_contiguity(X),
+    solve(X),
+    println(X),
+    fail.
+
+global_contiguity(X) =>
+    N = X.length,
+
+    % This uses the regular expression "0*1*0*" to
+    % require that all 1’s (if any) in an array
+    % appear contiguously.
+
+    Transition = [
+        [1, 2], % state 1: 0*
+        [3, 2], % state 2: 1*
+        [3, 0]  % state 3: 0*
+    ],
+
+    NStates = 3,
+    InputMax = 2,
+    InitialState = 1,
+    FinalStates = [1, 2, 3],
+    RegInput = new_list(N),
+    RegInput :: 1..InputMax, % 1..2
+
+    % Translate X’s 0..1 to RegInput’s 1..2
+    foreach(I in 1..N)
+        RegInput[I] #= X[I] + 1
+    end,
+
+    regular(RegInput, NStates, InputMax, Transition, InitialState, FinalStates).
+
+
+% --------- 3.9  ---------
+
+nrt =>
+    N = 10,  % Number of nurses
+    D = 7,   % Number of days in the scheduling period
+    MinDayShift = 3,   % Minimum number of nurses required for day shifts
+    MinNightShift = 2, % Minimum number of nurses required for night shifts
+    
+    Schedule = new_array(N, D),
+    Schedule :: 0..2,  % 0 = rest day, 1 = day shift, 2 = night shift
+    
+    % Constraint 1: Each nurse must have at least one day off every 4 days
+    foreach (Nurse in 1..N)
+        foreach (StartDay in 1..(D-3))  % Sliding window for every 4 days
+            RestDays = [Schedule[Nurse, StartDay+I] : I in 0..3],
+            RestCount :: 0..4,
+            count(0, RestDays, RestCount),
+            RestCount #>= 1
+        end
+    end,
+    
+    % Constraint 2: No nurse should work 3 consecutive night shifts
+    foreach (Nurse in 1..N)
+        foreach (StartDay in 1..(D-2))  % Sliding window for every 3 days
+            NightShifts = [Schedule[Nurse, StartDay+I] : I in 0..2],
+            NightCount :: 0..3,
+            count(2, NightShifts, NightCount),
+            NightCount #=< 2
+        end
+    end,
+    
+    % Constraint 3: Minimum number of nurses required for each shift
+    foreach (Day in 1..D)
+        DayColumn = [Schedule[Nurse, Day] : Nurse in 1..N],
+        DayCount :: 0..N,
+        NightCount :: 0..N,
+        count(1, DayColumn, DayCount),
+        count(2, DayColumn, NightCount),
+        DayCount #>= MinDayShift,   % Day shift
+        NightCount #>= MinNightShift  % Night shift
+    end,
+     
+    solve([ffc], Schedule), % ff pretty slow
+    
+    println("Nurse schedule (0=rest, 1=day shift, 2=night shift):"),
+    printf("Nurse\\Day  "),
+    foreach (Day in 1..D)
+        printf("%3d", Day)
+    end,
+    nl,
+    foreach (Nurse in 1..N)
+        printf("Nurse%4d: ", Nurse),
+        foreach (Day in 1..D)
+            printf("%3d", Schedule[Nurse, Day])
+        end,
+        nl
+    end,
+    nl,
+    
+    println("Daily shift statistics:"),
+    foreach (Day in 1..D)
+        DayShifts = 0,
+        NightShifts = 0,
+        RestShifts = 0,
+        foreach (Nurse in 1..N)
+            if Schedule[Nurse, Day] == 1 then
+                DayShifts := DayShifts + 1
+            elseif Schedule[Nurse, Day] == 2 then
+                NightShifts := NightShifts + 1
+            else
+                RestShifts := RestShifts + 1
+            end
+        end,
+        printf("Day %d: Day shift=%d, Night shift=%d, Rest=%d\n", Day, DayShifts, NightShifts, RestShifts)
+    end.
+
+
+% --------- 3.9  ---------
+
+nrf =>
+    problem(1, NumNurses, NumDays, MinDayShift, MinNightShift),
+    nurse_rostering(NumNurses, NumDays, MinDayShift, MinNightShift, X, _Stat),
+    foreach(Nurse in X)
+        println(Nurse)
+    end.
+
+nurse_rostering(NumNurses, NumDays, MinDayShift, MinNightShift, X, Stat) =>
+    % The DFA for the regular constraint.
+    Transition = [
+        % d n o
+        [2, 3, 1], % state 1
+        [4, 4, 1], % state 2
+        [4, 5, 1], % state 3
+        [6, 6, 1], % state 4
+        [6, 0, 1], % state 5
+        [0, 0, 1]  % state 6
+    ],
+    NStates = Transition.length, % number of states
+    InputMax = 3, % 3 states
+    InitialState = 1, % start at state 1
+    FinalStates = 1..6, % all states are final
+    DayShift = 1,
+    NightShift = 2,
+    OffShift = 3,
+    
+    % decision variables
+    X = new_array(NumNurses, NumDays),
+    X :: DayShift..OffShift,
+    
+    % summary of the shifts: [day, night, off]
+    Stat = new_array(NumDays, 3),
+    Stat :: 0..NumNurses,
+    
+    % constraints
+    foreach (I in 1..NumNurses)
+        regular([X[I, J] : J in 1..NumDays],
+                NStates,
+                InputMax,
+                Transition,
+                InitialState,
+                FinalStates)
+    end,
+
+    % statistics for each day
+    foreach (Day in 1..NumDays)
+        foreach (Type in 1..3)
+            Stat[Day, Type] #= sum([X[Nurse, Day] #= Type : Nurse in 1..NumNurses])
+        end,
+        sum([Stat[Day, Type] : Type in 1..3]) #= NumNurses,
+        
+        % For each day there must be at least 3 nurses with
+        % day shift, and 2 nurses with night shift
+        Stat[Day, DayShift] #>= MinDayShift,
+        Stat[Day, NightShift] #>= MinNightShift
+    end,
+
+    Vars = X.vars() ++ Stat.vars(),
+    solve(Vars).
+
+problem(1, NumNurses, NumDays, MinDayShift, MinNightShift) =>
+    NumNurses = 7,
+    NumDays = 14,
+    MinDayShift = 3, % minimum number in day shift
+    MinNightShift = 2. % minimum number in night shift
+
+
+% --------- 3.9  ---------
+
+nrti =>
+    Day = 1, % day shift
+    Night = 2, % night shift
+    Off = 3, % off
+
+    % valid 7 day schedules
+    Valid1 = [
+        [Day, Day, Day, Day, Day, Off, Off],
+        [Night, Off, Night, Off, Day, Day, Off],
+        [Night, Night, Off, Off, Day, Day, Off]
+    ],
+
+    % create all rotational variants
+    Valid = [],
+    foreach(V in Valid1, R in 0..V.length - 1)
+        Rot = rotate_left(V, R).to_array(),
+        Valid := Valid ++ [Rot]
+    end,
+
+    NumNurses = 14,
+    NumDays = Valid[1].length,
+
+    % decision variables
+    X = new_array(NumNurses, NumDays),
+    X :: Day..Off,
+
+    % ensure a valid scheme for each nurse
+    foreach(Nurse in 1..NumNurses)
+        table_in([X[Nurse, D] : D in 1..NumDays].to_array(), Valid)
+    end,
+
+    % constraints for minimum day and night shifts per day
+    foreach(D in 1..NumDays)
+        sum([X[Nurse, D] #= Day : Nurse in 1..NumNurses]) #>= 3,
+        sum([X[Nurse, D] #= Night : Nurse in 1..NumNurses]) #>= 2
+    end,
+
+    Vars = X.vars(),
+    solve(Vars),
+
+    % print the results
+    foreach(Nurse in X)
+        println(Nurse)
+    end.
+
+rotate_left(L) = rotate_left(L, 1).
+rotate_left(L, N) = slice(L, N + 1, L.length) ++ slice(L, 1, N).
