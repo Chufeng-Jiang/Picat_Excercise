@@ -1,0 +1,103 @@
+import planner.
+
+final({_SoLoc, BoxLocs}) =>      % _SoLoc表示不关心人的位置
+    foreach ((R, C) in BoxLocs)
+        goal(R, C)               % 检查所有箱子是否都在目标位置上，如果是则游戏结束
+    end.
+
+% 当条件满足时，这个规则【可能】被选择执行，
+% 如果失败了，在拉箱子不可行时，放弃这个选择，程序会回溯并尝试其他规则
+action({SoLoc, BoxLocs}, NextS, Action, Cost) ?=> 
+    NextS = {NewSoLoc, NewBoxLocs},
+    Action = $pull(BoxLoc, NewBoxLoc, OppDir),     % 定义第一种动作类型（拉箱子）
+    Cost = 1,
+    neib(SoLoc, BoxLoc, Dir),           % 人的当前位置SoLoc与箱子BoxLoc位置关系是否相邻
+    select(BoxLoc, BoxLocs, BoxLocs1),  % 从箱子列表中选择要移动的箱子，并得到剩余箱子列表
+    OppDir = opposite(Dir), 
+    
+    % 匹配模式找到PrevLoc
+    neib(SoLoc, PrevLoc, OppDir),       % 找到人在相反方向上的邻居位置（人即将移动到的位置）
+    not member(PrevLoc, BoxLocs1),      % 确保人要移动到的位置没有其他箱子
+    choose_move_destination(PrevLoc, BoxLocs1, OppDir, NewSoLoc),   % 选择人的最终移动位置
+    neib(NewSoLoc, NewBoxLoc, Dir),     % 确定箱子的新位置（在人的移动方向上）
+    insert_ordered(BoxLocs1, NewBoxLoc) = NewBoxLocs. % 将箱子的新位置插入到箱子列表中并保持有序
+
+% 必定会执行的动作
+action({SoLoc, BoxLocs}, NextS, Action, Cost) => 
+    NextS = {NewSoLoc, BoxLocs},    % 只有人的位置改变
+    Action = $walk(SoLoc, NewSoLoc, Dir),
+    Cost = 1,
+    neib(SoLoc, NextLoc, Dir),      % 遍历人当前位置的邻居位置
+    not member(NextLoc, BoxLocs),
+    choose_move_destination(NextLoc, BoxLocs, Dir, NewSoLoc).
+
+
+table  % 邻居关系表
+neib((R, C), Next, Dir) =>
+    Next = (R1, C1),     % 邻居位置的坐标
+    Neibs = [(R-1, C, up), (R+1, C, down), (R, C-1, left), (R, C+1, right)], % 四个可能的邻居位置：上、下、左、右
+    member((R1, C1, Dir), Neibs),  % 依次从邻居列表中选择一个有效的位置
+    size(NRows, NCols),            % 获取地图的行数和列数
+
+    % 确保邻居位置在地图边界内（不包括边界）且不是墙壁
+    R1 > 1, R1 < NRows,
+    C1 > 1, C1 < NCols,
+    not wall(R1, C1).
+
+choose_move_destination(Loc, _BoxLocs, _Dir, Dest) ?=> Dest = Loc. % 如果可以在当前位置停下，就停在当前位置（_表示不关心该参数）
+
+choose_move_destination(Loc, BoxLocs, Dir, Dest) =>  % 如果不能停在当前位置，继续寻找
+    neib(Loc, NextLoc, Dir),   % 依次尝试当前位置的邻位方向的下一个位置
+    not member(NextLoc, BoxLocs), % 下一个位置没有箱子
+    choose_move_destination(NextLoc, BoxLocs, Dir, Dest).   % 递归调用，继续寻找可行的目的地
+
+% 新增：反向转换函数
+reverse_step(walk(From, To, Dir), NewStep) =>
+    NewDir = opposite(Dir),
+    NewStep = $walk(To, From, NewDir).  % 反向转换 walk 操作
+
+reverse_step(pull(BoxFrom, BoxTo, Dir), NewStep) =>
+    NewDir = opposite(Dir),
+    NewStep = $push(BoxTo, BoxFrom, NewDir).  % 反向转换 pull 操作为 push
+
+% 新增：将解决方案转换为正向推箱子操作
+convert_to_forward_solution(Plan, ForwardPlan) =>
+    ReversedPlan = reverse(Plan),  % 反转步骤顺序
+    convert_steps(ReversedPlan, ForwardPlan).
+
+% 将每个步骤转换为正向操作
+convert_steps([], []) => [].
+convert_steps([Step | RestSteps], [NewStep | RestNewSteps]) =>
+    reverse_step(Step, NewStep),
+    convert_steps(RestSteps, RestNewSteps).
+
+opposite(up) = down.
+opposite(down) = up.
+opposite(left) = right.
+opposite(right) = left.
+
+
+main =>
+    Facts = $[                                   % 定义游戏地图的事实信息
+        size(7, 7),
+        wall(2, 2), wall(2, 3), wall(3, 5),
+        wall(5, 5), goal(3, 3), goal(4, 4),
+        goal(4, 5), goal(6, 5)
+    ],
+
+    cl_facts(Facts, $[wall(+,+), goal(+,+)]),    % 将事实列表转换为子句并加载到知识库中，声明wall和goal谓词的参数类型
+
+    SoLoc = (2, 4),                              % 设置推箱子人(Sokoban)的初始位置为坐标(2, 4)
+    BoxLocs = [(2, 6), (3, 6), (5, 2), (6, 6)],  % 设置所有箱子的初始位置列表
+    best_plan_unbounded({SoLoc, BoxLocs}, Plan),
+
+    println("=== Reversed Solution ==="),
+    foreach (Step in Plan)
+        println(Step)
+    end,
+    
+    println("\n=== In-order Solution==="),
+    convert_to_forward_solution(Plan, ForwardPlan),
+    foreach (Step in ForwardPlan)
+        println(Step)
+    end.

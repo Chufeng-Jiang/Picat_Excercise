@@ -1,0 +1,399 @@
+import cp.
+% --------- 4.2  ---------
+table(+,max)
+index (-,-)
+p(a,2).
+p(a,1).
+p(a,3).
+p(b,3).
+p(b,4).
+
+% --------- 4.3  ---------
+
+table(+,+,-,min)
+sp(X,Y,Path,W) ?=>
+    Path = [(X,Y)],
+    edge(X,Y,W).
+sp(X,Y,Path,W) =>
+    Path = [(X,Z)|Path1],
+    edge(X,Z,Wxz),
+    sp(Z,Y,Path1,W1),
+    W = Wxz + W1.
+
+
+table(+,+,-,min)
+sp2(X,Y,Path,WL) ?=>
+    Path = [(X,Y)],
+    edge(X,Y,Wxy),
+    WL = (Wxy,1).
+sp2(X,Y,Path,WL) =>
+    Path = [(X,Z)|Path1],
+    edge(X,Z,Wxz),
+    sp2(Z,Y,Path1,WL1),
+    WL1 = (W1,Len1),
+    WL = (Wxz + W1, Len1 + 1).
+
+
+table(+,+,-,min)
+sp3(X,Y,Path,LW) ?=>
+    Path = [(X,Y)],
+    edge(X,Y,Wxy),
+    LW = (1,Wxy).
+sp3(X,Y,Path,LW) =>
+    Path = [(X,Z)|Path1],
+    edge(X,Z,Wxz),
+    sp3(Z,Y,Path1,LW1),
+    LW1 = (Len1,W1),
+    LW = (Len1 + 1, Wxz + W1).
+
+edge(1, 2, 5).
+edge(2, 3, 2).
+edge(3, 4, 3).
+edge(1, 3, 7).
+edge(2, 4, 9).
+    
+spt =>
+    sp(1, 4, Path1, W1),
+    println(Path1),  % Expected path should be [(1, 2), (2, 3), (3, 4)]
+    println(W1),     % Expected weight should be 10
+    nl,
+    sp2(1, 4, Path2, WL2),
+    println(Path2),  % Expected path should be [(1, 3), (3, 4)]
+    println(WL2),    % Expected WL tuple should be (10, 2)
+    nl,
+    sp3(1, 4, Path3, LW3),
+    println(Path3),  % Expected path should be [(1, 3), (3, 4)]
+    println(LW3).    % Expected WL tuple should be (2, 10)
+
+
+% --------- 4.4  ---------
+
+table(+,+,-,max)
+knapsack1(_, C, Sack, Val), C =< 0 =>
+    Sack = [], Val = 0.
+
+knapsack1([_|L], C, Sack, Val) ?=> 
+    knapsack1(L, C, Sack, Val).
+
+knapsack1([Item@(IVol, IVal)|L], C, Sack, Val), C >= IVol =>
+    Sack = [Item|Sack1],
+    knapsack1(L, C-IVol, Sack1, Val1),
+    Val = Val1 + IVal.
+
+
+table(+,+,-,max)
+knapsack2([], _, Sack, Val) =>
+    Sack = [], Val = 0.
+
+knapsack2(_, C, Sack, Val), C =< 0 =>
+    Sack = [], Val = 0.
+
+knapsack2([Item@(IVol, IVal)|L], C, Sack, Val), C >= IVol =>
+    knapsack2(L, C, Sack1, Val1), 
+    knapsack2(L, C - IVol, Sack2, Val2), 
+    (Val1 > Val2 + IVal ->
+        Sack = Sack1, Val = Val1
+    ;
+        Sack = [Item|Sack2], Val = Val2 + IVal
+    ).
+
+knapsack2([_|L], C, Sack, Val) =>
+    knapsack2(L, C, Sack, Val).
+
+
+ks=>
+    Items = [(3, 4), (4, 5), (2, 3), (5, 6), (1, 2)],
+    Capacity = 8,
+    knapsack1(Items, Capacity, Sack1, Val1),
+    printf("Items1: %w\n", Sack1),
+    printf("Total Value1: %d\n", Val1),
+    printf("Total Capacity1: %d\n", sum([Vol : (Vol, _) in Sack1])),
+    nl,
+    Items = [(3, 4), (4, 5), (2, 3), (5, 6), (1, 2)],
+    Capacity = 8,
+    knapsack2(Items, Capacity, Sack2, Val2),
+    printf("Items2: %w\n", Sack2),
+    printf("Total Value1: %d\n", Val2),
+    printf("Total Capacity2: %d\n", sum([Vol : (Vol, _) in Sack2])).
+
+% --------- 4.5  ---------
+
+table(+,+,min)
+egg(_,0,NTries) => NTries=0.
+egg(_,1,NTries) => NTries=1.
+egg(1,H,NTries) => NTries=H.
+egg(N,H,NTries) =>
+    between(1,H,L), % choose a floor
+    egg(N-1,L-1,NTries1), % the egg breaks
+    egg(N,H-L,NTries2), % the egg survives
+    NTries is max(NTries1,NTries2)+1.
+
+
+negg =>
+    N2 = 2, H2 = 10,
+    egg(N2, H2, Tries2),
+    printf("Test 1: %d eggs, %d floors -> Minimum tries: %d\n", N2, H2, Tries2),
+    
+    N3 = 3, H3 = 10,
+    egg(N3, H3, Tries3),
+    printf("Test 3: %d eggs, %d floors -> Minimum tries: %d\n", N3, H3, Tries3),
+    
+    N4 = 1, H4 = 20,
+    egg(N4, H4, Tries4),
+    printf("Test 4: %d egg, %d floors -> Minimum tries: %d\n", N4, H4, Tries4).
+
+% --------- 4.6  ---------
+
+table(+,+,min)
+
+edit([], [], D) =>
+    D = 0.
+
+edit([X|P], [X|T], D) => % match
+    edit(P, T, D).
+
+edit(P, [_|T], D) ?=> % insert
+    edit(P, T, D1),
+    D = D1 + 1.
+
+edit([_|P], T, D) => % delete
+    edit(P, T, D1),
+    D = D1 + 1.
+
+edit =>
+   S1 = "city",
+   S2 = "ditch",
+   edit(S1, S2, D),
+   printf("Test: '%s' -> '%s' = %d operations\n", S1, S2, D). 
+
+% --------- 4.7  ---------
+
+table(+,-,max)
+lis([], Sub, Len) =>
+    Sub = [], Len = 0.
+
+lis([X|L], Sub, Len) ?=> % Subprob 1: Sub starts here
+    append(_, L1, L),
+    lis(L1, Sub1, Len1),
+    (Sub1 == [] -> true; Sub1 = [Y|_], X < Y),
+    Sub = [X|Sub1],
+    Len = Len1 + 1.
+
+lis([_|L], Sub, Len) => % Subprob 2: Sub starts later
+    lis(L, Sub, Len).
+
+lis =>
+    List = [9,20,8,33,21,50,41,60,70],
+    lis(List, Sub, Len),
+    println(Sub).
+
+tlis =>
+    Ns = 500..500..2000, % from 500 to 5000 step 500
+    member(N, Ns),
+    initialize_table,
+    L = [random() : _ in 1..N],
+    statistics(runtime, _),
+    lis(L, _Sub, _Len),
+    statistics(runtime, [_, Time]),
+    writeln((N, Time)), 
+    fail.
+
+
+% --------- 4.8  ---------
+
+table (+,+,+,-,min)
+
+% 当没有盘子需要移动时（N=0）
+hanoi(0, _CState, _GState, Plan, Len) =>
+    Plan = [],
+    Len = 0.
+
+%%%% Optimazation %%%%
+% 识别出了不需要移动的盘子，从而避免了不必要的计算和移动操作
+% 减少了移动次数，减少了递归调用，递归栈缩短
+%%%%%%%%%%%%%%%%%%%%%%
+
+% 当盘子N在当前状态和目标状态都在第1根柱子的底部时
+hanoi(N, {[N|Pi1], Pi2, Pi3}, {[N|Pg1], Pg2, Pg3}, Plan, Len) =>
+    % 接递归处理剩余的N-1个盘子，无需移动盘子N
+    hanoi(N - 1, {Pi1, Pi2, Pi3}, {Pg1, Pg2, Pg3}, Plan, Len).
+
+% 当盘子N在当前状态和目标状态都在第2根柱子的底部时
+hanoi(N, {Pi1, [N|Pi2], Pi3}, {Pg1, [N|Pg2], Pg3}, Plan, Len) =>
+    % 跳过这个盘子，处理其余盘子
+    hanoi(N - 1, {Pi1, Pi2, Pi3}, {Pg1, Pg2, Pg3}, Plan, Len).
+
+% 当盘子N在当前状态和目标状态都在第3根柱子的底部时
+hanoi(N, {Pi1, Pi2, [N|Pi3]}, {Pg1, Pg2, [N|Pg3]}, Plan, Len) =>
+    % 跳过这个盘子，处理其余盘子
+    hanoi(N - 1, {Pi1, Pi2, Pi3}, {Pg1, Pg2, Pg3}, Plan, Len).
+
+%%%% Minimum Case %%%%
+
+% 只有1个盘子时
+hanoi(1, CState, GState, Plan, Len) =>
+    % 找到盘子1在当前状态的位置
+    Peg1 = disk_on_peg(1, CState),
+    % 找到盘子1在目标状态应该的位置
+    Peg2 = disk_on_peg(1, GState),
+    Plan = [$move(Peg1, Peg2)],
+    Len = 1.
+
+%%%% General Case %%%%
+% 分成了三步走：
+%   第一步：移除最大盘子，准备开始处理最大盘子上方的小盘子
+%   第二步：开始递归->嵌套递归->进入最小case
+%   第三步：嵌套递归返回形成plan1 + 当前移动 $move(Pni, Png) + 嵌套递归返回形成plan2
+%%%%%%%%%%%%%%%%%%%%%%%
+hanoi(N, CState, GState, Plan, Len) =>
+    Pni = disk_on_peg(N, CState), % 最大盘子N在当前状态的柱子位置
+    Png = disk_on_peg(N, GState), % 最大盘子N在目标状态的柱子位置
+    Po = other_peg(Pni, Png),     % 除了起始和目标柱子外的第三根柱子（辅助柱子）
+    
+    CState1 = remove_btm_disk(CState, Pni), % 从当前状态移除最大盘子后的状态
+    N1 = N - 1, % 剩余盘子数量
+    
+    % 中间状态：目标 Peg 上填满，中间 Peg 清空
+    IState = {_, _, _}, 
+    
+    % 将前N-1个盘子都移到辅助柱子Po上[I : I in N1..-1..1]：生成从N-1到1的降序列表
+    IState[Po] = [I : I in N1..-1..1],
+    % 起始柱子和目标柱子都清空
+    IState[Pni] = [],
+    IState[Png] = [],
+
+    % 开始递归， 把n-1个盘子移动到对应的空柱子
+    % 将前N-1个盘子从当前位置移到辅助柱子
+    % Plan1在这里生成
+    hanoi(N1, CState1, IState, Plan1, Len1),
+    
+    % 从目标状态移除最大盘子后的状态
+    GState1 = remove_btm_disk(GState, Png), 
+    
+    % 将前N-1个盘子从辅助柱子移到最终目标位置
+    % Plan2在这里生成
+    hanoi(N1, IState, GState1, Plan2, Len2), 
+
+    % 第一部分 + 移动最大盘子 + 第二部分
+    Plan = Plan1 ++ [$move(Pni, Png) | Plan2],
+    Len = Len1 + Len2 + 1.
+
+% 辅助函数：从指定柱子移除底部（最大）盘子
+remove_btm_disk({[_|P1], P2, P3}, 1) = {P1, P2, P3}.
+remove_btm_disk({P1, [_|P2], P3}, 2) = {P1, P2, P3}.
+remove_btm_disk({P1, P2, [_|P3]}, _) = {P1, P2, P3}.
+
+% 辅助函数：找到指定盘子N所在的柱子编号
+disk_on_peg(N, {[N|_], _, _}) = 1.
+disk_on_peg(N, {_, [N|_], _}) = 2.
+disk_on_peg(_, _) = 3.
+
+% 辅助函数：给定两根柱子，返回第三根柱子的编号
+other_peg(1, 2) = 3.
+other_peg(1, 3) = 2.
+other_peg(2, 1) = 3.
+other_peg(2, 3) = 1.
+other_peg(3, 1) = 2.
+other_peg(3, 2) = 1.
+
+ha =>
+    hanoi(3,{[1],[3,2],[]},{[1],[2],[3]},Plan,Len),
+    writeln(plan=Plan),
+    writeln(len=Len).
+
+% --------- 4.9  ---------
+
+coins1 =>
+    member(N,[12,20,30,40,50,60,70]), % 从列表中依次取出每个元素赋值给N，测试不同数量的硬币。
+    statistics(runtime,_),            % 获取当前运行时统计信息，使用_忽略返回值，这里只是为了重置计时器
+    once minW(N,M),                   % once 确保 minW(N,M) 只执行一次，找到第一个解就停止
+    statistics(runtime,[_,Time]),     % 结束计时
+    writeln((N,M,Time)), 
+    fail.
+
+minW(N,M) =>
+    initialize_table,
+    between(1,N,M),                   % 生成从1到N的整数，依次赋值给M，由于按递增顺序尝试，第一个成功的M就是最小值
+    coin({N,0,0,0,M},_).
+
+coins12 =>
+    coin({12, 0, 0, 0, 3}, Plan),
+    writeln(Plan).
+
+table(+,-)
+
+coin({0, 0, 0, _, _}, Plan) => % 只有未知硬币，无称重机会
+    Plan = nil.
+
+coin({0, 1, 0, _, _}, Plan) => % 只有1个已知重硬币
+    Plan = nil.
+
+coin({0, 0, 1, _, _}, Plan) => % 只有1个已知轻硬币
+    Plan = nil.
+
+coin(State@{NU, NPH, NPL, NG, NW}, Plan), NW > 0 =>
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    % State: 当前状态
+    % 左侧放置的硬币组合
+    % 右侧放置的硬币组合
+    % Plan1, Plan2, Plan3: 三种结果对应的后续计划
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    Plan = $weigh(State,
+                  {NU1, NPH1, NPL1, NG1},
+                  {NU2, NPH2, NPL2, NG2}, 
+		  Plan1, Plan2, Plan3),
+    
+    % 各类硬币在左右两侧的数量范围
+    [NU1, NU2] :: 0..NU,
+    [NPH1, NPH2] :: 0..NPH,
+    [NPL1, NPL2] :: 0..NPL,
+    [NG1, NG2] :: 0..NG,
+    
+    % 使用的硬币数量不超过可用数量
+    NU1 + NU2 #=< NU,
+    NPH1 + NPH2 #=< NPH,
+    NPL1 + NPL2 #=< NPL,
+    NG1 + NG2 #=< NG,
+    
+    % 左右两侧的硬币总数
+    LSide #= NU1 + NPH1 + NPL1 + NG1,
+    RSide #= NU2 + NPH2 + NPL2 + NG2,
+    
+    % 用字典序约束避免对称解
+    lex_le([NU1, NPH1, NPL1, NG1], [NU2, NPH2, NPL2, NG2]),
+    
+    LSide #> 0,
+    RSide #> 0,
+    LSide #= RSide,  % equal number of coins on both sides
+    
+    NW1 = NW - 1, % 减少一次称重机会
+
+    solve([NU1, NU2, NPH1, NPH2, NPL1, NPL2, NG1, NG2]),
+    
+    % 天平平衡, 称重的硬币变为已知正常硬币, 未称重的硬币保持未知状态
+    O1 = {NU - NU1 - NU2,  
+          NPH - NPH1 - NPH2,
+          NPL - NPL1 - NPL2,
+          NG + NU1 + NPH1 + NPL1 + NU2 + NPH2 + NPL2,
+          NW1},
+    
+    % 递归
+    coin(O1, Plan1),
+    
+    % 左侧较重，左侧硬币可能是重硬币，右侧硬币可能是轻硬币，其余硬币为正常硬币
+    O2 = {0,  
+          NPH1 + NU1, 
+          NPL2 + NU2,
+          NG + (NPH - NPH1) + (NPL - NPL2) + (NU - NU1 - NU2),
+          NW1},
+    
+    coin(O2, Plan2),
+    
+    O3 = {0,  % Outcome3: left side is lighter
+          NPH2 + NU2,
+          NPL1 + NU1,
+          NG + (NPH - NPH2) + (NPL - NPL1) + (NU - NU1 - NU2),
+          NW1},
+    
+    coin(O3, Plan3).
+

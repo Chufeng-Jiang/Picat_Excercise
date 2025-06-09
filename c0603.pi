@@ -1,0 +1,27 @@
+import planner.
+
+main =>
+    print("Type a non-negative integer:"),
+    N = read_int(),
+    best_plan((0, N), Plan),
+    printf("%s\n", Plan ++ [o]),
+    println(num_of_insts = len(Plan) + 1).
+
+final((N, N)) => true.
+
+action((A, N), NextS, Action, Cost) =>
+    NextS = (NextA, N),
+    Cost = 1,
+    instruction(A, N, NextA, Action).
+
+instruction(A, N, NextA, Action), A < N ?=>
+    Action = i,
+    NextA = A + 1.
+
+instruction(A, N, NextA, Action), A !== 0 ?=>
+    Action = d,
+    NextA = A - 1.
+
+instruction(A, N, NextA, Action), A > 1, A < N =>
+    Action = s,
+    NextA = A * A.

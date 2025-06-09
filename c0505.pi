@@ -1,0 +1,90 @@
+import planner.
+
+final({_, Pieces}), member({(2, 2), (4, 2)}, Pieces) => true.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% {Spaces, Pieces}：空格位置列表和拼图块列表
+% Dim(Height, Width)
+% Pos(Row, Column)
+% {Dim, Pos} 确定了一个拼图块在网格中的位置和形状
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+action({Spaces, Pieces}, NextS, Action, Cost) =>
+    Cost = 1,                                                 % 设置每个动作的成本为1。
+    select({Dim, Pos}, Pieces, Pieces1),                      % 从拼图块列表中选择一个块，Dim是尺寸，Pos是位置，Pieces1是剩余的块。
+    move_piece(Spaces, Dim, Pos, NSpaces, NPos, Action),      % 调用移动块函数，返回新的空格位置、新的块位置和具体动作。需要左边有一个空格，移动后原右边界变为空格
+    NextS = {NSpaces, insert_ordered(Pieces1, {Dim, NPos})}.  % 构建下一个状态，包含新的空格位置和更新后的拼图块列表。
+
+move_piece(Spaces, D@(W, H), P@(R, C), NSpaces, NP, Action) ?=>
+    Action = $move(D, P, left),
+    C1 = C - 1, 
+    NP = (R, C1), % 设置新位置为(R, C1)。
+    if H == 1 then
+        select((R, C1), Spaces, SpacesR),               % 如果高度为1，从空格中移除(R, C1)位置
+        NSpaces = insert_ordered(SpacesR, (R, C1 + W))  % 在空格列表中插入块原来右边界的位置。
+    else
+        Spaces = [(R, C1), (R + 1, C1)],                % 如果高度大于1,要求空格包含两个位置：(R, C1)和(R+1, C1)。
+        NSpaces = [(R, C1 + W), (R + 1, C1 + W)]        % 新空格位置为块原来右边界的两个位置。
+    end.
+
+move_piece(Spaces, D@(W, H), P@(R, C), NSpaces, NP, Action) ?=>
+    Action = $move(D, P, right),
+    C1 = C + 1, 
+    NP = (R, C1),
+    if H == 1 then
+        select((R, C + W), Spaces, SpacesR),            % 从空格中移除块右边界位置。
+        NSpaces = insert_ordered(SpacesR, (R, C))       % 在空格列表中插入块原来的左边界位置。
+    else
+        Spaces = [(R, C + W), (R + 1, C + W)],          % 要求空格包含块右边界的两个位置。
+        NSpaces = [(R, C), (R + 1, C)]                  % 新空格为块原来左边界的两个位置。
+    end.
+
+move_piece(Spaces, D@(W, H), P@(R, C), NSpaces, NP, Action) ?=>
+    Action = $move(D, P, up),
+    R1 = R - 1, 
+    NP = (R1, C),
+    if W == 1 then
+        select((R1, C), Spaces, SpacesR),               % 从空格中移除新位置。
+        NSpaces = insert_ordered(SpacesR, (R1 + H, C))  % 在空格列表中插入块原来下边界位置。
+    else
+        Spaces = [(R1, C), (R1, C + 1)],                % 要求空格包含新位置的两个相邻位置。
+        NSpaces = [(R1 + H, C), (R1 + H, C + 1)]        % 新空格为块原来下边界的两个位置。
+    end.
+
+move_piece(Spaces, D@(W, H), P@(R, C), NSpaces, NP, Action) =>
+    Action = $move(D, P, down),
+    R1 = R + 1, 
+    NP = (R1, C),
+    if W == 1 then
+        select((R + H, C), Spaces, SpacesR),
+        NSpaces = insert_ordered(SpacesR, (R, C))
+    else
+        Spaces = [(R + H, C), (R + H, C + 1)],
+        NSpaces = [(R, C), (R, C + 1)]
+    end.
+
+
+initial(S) =>
+    S = {
+        [(5, 2), (5, 3)],      % empty spaces
+        sort([
+            {(2, 2), (1, 2)},  % one 2 x 2 piece
+            {(2, 1), (3, 2)},  % one 2 x 1 piece
+            {(1, 2), (1, 1)},  % four 1 x 2 pieces
+            {(1, 2), (3, 1)},
+            {(1, 2), (1, 4)},
+            {(1, 2), (3, 4)},
+            {(1, 1), (5, 1)},  % four 1 x 1 pieces
+            {(1, 1), (4, 2)},
+            {(1, 1), (4, 3)},
+            {(1, 1), (5, 4)}
+        ])
+    }.
+
+
+main =>
+    initial(S0),
+    time2(best_plan_unbounded(S0, Plan)),
+    foreach (Step in Plan)
+        println(Step)
+    end,
+    println(len = length(Plan)).

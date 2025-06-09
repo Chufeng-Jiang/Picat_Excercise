@@ -1,0 +1,47 @@
+import planner.
+
+% Final state where the piles are the same as the goal piles
+final((Piles, Piles)) => true.
+
+% Move a block from a pile to another pile
+action((Piles, GPiles), NextS, Action, Cost),
+    Cost = 1,
+    NextS = (NPiles, GPiles),
+    select(FromPile, Piles, Piles1),
+    not stable(FromPile, GPiles),
+    FromPile = [Block | FromPileR],
+    select(ToPile, Piles1, PilesR),
+    stable([Block | ToPile], GPiles) =>
+        NPiles1 = PilesR.insert_ordered([Block | ToPile]),
+        if FromPileR == [] then
+            NPiles = NPiles1
+        else
+            NPiles = NPiles1.insert_ordered(FromPileR)
+        end,
+        Action = $move(Block, ToPile).
+
+% Move a block from a pile to the table
+action((Piles, GPiles), NextS, Action, Cost) =>
+    Cost = 1,
+    NextS = (NPiles, GPiles),
+    select(FromPile, Piles, PilesR),
+    not stable(FromPile, GPiles),
+    FromPile = [Block | FromPileR],
+    FromPileR !== [],
+    NPiles1 = PilesR.insert_ordered([Block]),
+    NPiles = NPiles1.insert_ordered(FromPileR),
+    Action = $move(Block, table).
+
+% Stability condition: A pile is stable if it can be a part of any goal pile
+stable(Pile, GPiles),
+    member(GPile, GPiles),
+    append(_, Pile, GPile) =>
+        true.
+
+main =>
+    Init = [[b], [c,d, a]],
+    Goal = [[a, b, c, d]],
+    best_plan((Init, Goal), Plan),
+    foreach (Step in Plan)
+        println(Step)
+    end.
